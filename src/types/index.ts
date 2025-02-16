@@ -4,6 +4,9 @@ export interface Tweet {
   text: string;
   author: string;
   timestamp: string;
+  subreddit: string;
+  score: number;
+  numComments: number;
   sentiment: SentimentAnalysis;
 }
 
@@ -23,4 +26,12 @@ export interface StockSentiment {
     neutral: number;
   };
   latestTweets: Tweet[];
+  analytics: {
+    subredditBreakdown: Array<{
+      name: string;
+      posts: number;
+      avgSentiment: number;
+      totalScore: number;
+    }>;
+  };
 }
