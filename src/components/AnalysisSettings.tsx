@@ -62,28 +62,38 @@ export const AnalysisSettings = ({ onSettingsChange }: AnalysisSettingsProps) =>
           Analysis Settings
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4">
+      <PopoverContent className="w-96 p-4" align="end">
         <div className="space-y-4">
           <div>
             <h4 className="font-medium mb-2">Date Range</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <label className="text-sm text-gray-500">Start Date</label>
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => handleDateChange('start', date)}
-                  className="rounded-md border"
-                />
+                <div className="border rounded-md p-2">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => handleDateChange('start', date)}
+                    initialFocus
+                    disabled={(date) =>
+                      date > new Date() || date > endDate
+                    }
+                  />
+                </div>
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm text-gray-500">End Date</label>
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(date) => handleDateChange('end', date)}
-                  className="rounded-md border"
-                />
+                <div className="border rounded-md p-2">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => handleDateChange('end', date)}
+                    initialFocus
+                    disabled={(date) =>
+                      date > new Date() || date < startDate
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>

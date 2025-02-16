@@ -3,13 +3,19 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 let geminiClient: GoogleGenerativeAI | null = null;
 
+export type GeminiModel = 'gemini-pro' | 'gemini-pro-vision';
+
 export const initGemini = (apiKey: string) => {
   geminiClient = new GoogleGenerativeAI(apiKey);
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const analyzeSentiment = async (text: string, retryCount = 0): Promise<{
+export const analyzeSentiment = async (
+  text: string,
+  modelName: GeminiModel = 'gemini-pro',
+  retryCount = 0
+): Promise<{
   score: number;
   label: 'positive' | 'negative' | 'neutral';
   confidence: number;
@@ -17,7 +23,7 @@ export const analyzeSentiment = async (text: string, retryCount = 0): Promise<{
   if (!geminiClient) throw new Error('Gemini client not initialized');
 
   try {
-    const model = geminiClient.getGenerativeModel({ model: 'gemini-pro' });
+    const model = geminiClient.getGenerativeModel({ model: modelName });
     
     const prompt = `Analyze the sentiment of this tweet about stocks. Return the response in JSON format with these fields:
     - score (number between -1 and 1)
@@ -48,7 +54,7 @@ export const analyzeSentiment = async (text: string, retryCount = 0): Promise<{
       const waitTime = Math.pow(2, retryCount) * 1000;
       console.log(`Rate limited. Retrying in ${waitTime}ms...`);
       await delay(waitTime);
-      return analyzeSentiment(text, retryCount + 1);
+      return analyzeSentiment(text, modelName, retryCount + 1);
     }
 
     // If we've exhausted retries or hit a different error
