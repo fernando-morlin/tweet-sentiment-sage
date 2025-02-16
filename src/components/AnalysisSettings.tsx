@@ -62,38 +62,28 @@ export const AnalysisSettings = ({ onSettingsChange }: AnalysisSettingsProps) =>
           Analysis Settings
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-4" align="end">
+      <PopoverContent className="w-80 p-4">
         <div className="space-y-4">
           <div>
             <h4 className="font-medium mb-2">Date Range</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
                 <label className="text-sm text-gray-500">Start Date</label>
-                <div className="border rounded-md p-2">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => handleDateChange('start', date)}
-                    initialFocus
-                    disabled={(date) =>
-                      date > new Date() || date > endDate
-                    }
-                  />
-                </div>
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => handleDateChange('start', date)}
+                  className="rounded-md border"
+                />
               </div>
-              <div className="space-y-2">
+              <div>
                 <label className="text-sm text-gray-500">End Date</label>
-                <div className="border rounded-md p-2">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => handleDateChange('end', date)}
-                    initialFocus
-                    disabled={(date) =>
-                      date > new Date() || date < startDate
-                    }
-                  />
-                </div>
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date) => handleDateChange('end', date)}
+                  className="rounded-md border"
+                />
               </div>
             </div>
           </div>
