@@ -6,45 +6,78 @@ import { TweetList } from '@/components/TweetList';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { StockSentiment } from '@/types';
-import { initGemini } from '@/lib/gemini';
+import { initGemini, analyzeSentiment } from '@/lib/gemini';
+import { fetchRedditPosts } from '@/lib/reddit';
+import { useToast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [loading, setLoading] = useState(false);
   const [sentiment, setSentiment] = useState<StockSentiment | null>(null);
+  const { toast } = useToast();
 
   const handleSearch = async (symbol: string) => {
     setLoading(true);
-    // TODO: Implement actual API call
-    // For now, we'll use mock data
-    const mockData: StockSentiment = {
-      symbol,
-      overallScore: 0.65,
-      tweetCount: 150,
-      distribution: {
-        positive: 70,
-        negative: 30,
-        neutral: 50,
-      },
-      latestTweets: [
-        {
-          id: '1',
-          text: `Really impressed with ${symbol}'s latest earnings report. Strong growth indicators! #stocks`,
-          author: '@investor123',
-          timestamp: new Date().toISOString(),
-          sentiment: {
-            score: 0.8,
-            label: 'positive',
-            confidence: 0.92,
-          },
+    try {
+      // 1. Fetch Reddit posts
+      const posts = await fetchRedditPosts(symbol);
+      
+      if (posts.length === 0) {
+        toast({
+          title: "No posts found",
+          description: "Couldn't find any recent posts about this stock. Try another symbol.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 2. Analyze sentiment for each post
+      const analyzedPosts = await Promise.all(
+        posts.map(async (post) => {
+          const sentimentResult = await analyzeSentiment(post.text);
+          return {
+            ...post,
+            sentiment: sentimentResult
+          };
+        })
+      );
+
+      // 3. Calculate overall sentiment
+      const sentimentScores = analyzedPosts.map(post => post.sentiment.score);
+      const overallScore = sentimentScores.reduce((a, b) => a + b, 0) / sentimentScores.length;
+
+      // 4. Calculate distribution
+      const distribution = analyzedPosts.reduce(
+        (acc, post) => {
+          acc[post.sentiment.label]++;
+          return acc;
         },
-        // Add more mock tweets as needed
-      ],
-    };
-    
-    setTimeout(() => {
-      setSentiment(mockData);
+        { positive: 0, negative: 0, neutral: 0 }
+      );
+
+      // 5. Update state with real data
+      setSentiment({
+        symbol,
+        overallScore: (overallScore + 1) / 2, // Convert from [-1,1] to [0,1]
+        tweetCount: posts.length,
+        distribution,
+        latestTweets: analyzedPosts
+      });
+
+      toast({
+        title: "Analysis Complete",
+        description: `Analyzed ${posts.length} posts about ${symbol}`
+      });
+    } catch (error) {
+      console.error('Error analyzing sentiment:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong while analyzing the sentiment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -55,7 +88,7 @@ const Index = () => {
             Stock Sentiment Analyzer
           </h1>
           <p className="mt-3 text-lg text-gray-500">
-            Analyze the sentiment of tweets about any stock in real-time
+            Analyze the sentiment of Reddit posts about any stock in real-time
           </p>
         </div>
 
@@ -75,14 +108,14 @@ const Index = () => {
                   Positive Sentiment
                 </div>
                 <div className="mt-2 text-sm text-gray-500">
-                  Based on {sentiment.tweetCount} tweets
+                  Based on {sentiment.tweetCount} posts from Reddit
                 </div>
               </div>
               <SentimentChart distribution={sentiment.distribution} />
             </Card>
 
             <Card className="p-6 glass-card">
-              <h2 className="text-xl font-semibold mb-4">Latest Tweets</h2>
+              <h2 className="text-xl font-semibold mb-4">Latest Posts</h2>
               <TweetList tweets={sentiment.latestTweets} />
             </Card>
           </div>
