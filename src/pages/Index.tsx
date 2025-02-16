@@ -5,6 +5,8 @@ import { SentimentChart } from '@/components/SentimentChart';
 import { TweetList } from '@/components/TweetList';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import type { StockSentiment } from '@/types';
 import { initGemini, analyzeSentiment } from '@/lib/gemini';
 import { fetchRedditPosts } from '@/lib/reddit';
@@ -13,9 +15,38 @@ import { useToast } from '@/components/ui/use-toast';
 const Index = () => {
   const [loading, setLoading] = useState(false);
   const [sentiment, setSentiment] = useState<StockSentiment | null>(null);
+  const [apiKey, setApiKey] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
+  const handleInitialize = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      initGemini(apiKey);
+      setIsInitialized(true);
+      toast({
+        title: "API Initialized",
+        description: "Gemini API has been successfully initialized.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to initialize Gemini API. Please check your API key.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSearch = async (symbol: string) => {
+    if (!isInitialized) {
+      toast({
+        title: "API Not Initialized",
+        description: "Please enter your Gemini API key first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Fetch Reddit posts
@@ -92,9 +123,45 @@ const Index = () => {
           </p>
         </div>
 
-        <Card className="p-6 glass-card">
-          <StockSearch onSearch={handleSearch} isLoading={loading} />
-        </Card>
+        {!isInitialized && (
+          <Card className="p-6 glass-card">
+            <form onSubmit={handleInitialize} className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Initialize Gemini API</h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  Please enter your Gemini API key to start analyzing sentiments.
+                  You can get one from the{" "}
+                  <a
+                    href="https://makersuite.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-600"
+                  >
+                    Google AI Studio
+                  </a>
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="Enter your Gemini API key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={!apiKey}>
+                  Initialize
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
+
+        {isInitialized && (
+          <Card className="p-6 glass-card">
+            <StockSearch onSearch={handleSearch} isLoading={loading} />
+          </Card>
+        )}
 
         {sentiment && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
